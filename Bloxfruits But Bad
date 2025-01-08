@@ -1,0 +1,100 @@
+local player = game.Players.LocalPlayer
+local teleporting = false  -- To track the teleportation state
+local handleParts = {}  -- Table to store all handle parts found in the Workspace
+
+-- Function to find handles in the workspace
+local function findHandles()
+    handleParts = {}
+    -- Loop through all objects in the Workspace
+    for _, object in pairs(workspace:GetChildren()) do
+        -- Check if the object has a "Handle" part
+        local handlePart = object:FindFirstChild("Handle")
+        -- If a "Handle" is found, add it to the table
+        if handlePart then
+            table.insert(handleParts, handlePart)
+        end
+    end
+end
+
+-- Function to teleport the player to the next Handle
+local function teleportToHandle()
+    local character = player.Character or player.CharacterAdded:Wait()
+
+    -- Check if the character and HumanoidRootPart exist
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        while teleporting do
+            -- Find handles every iteration
+            findHandles()
+
+            -- If handleParts is not empty, teleport to the first one
+            if #handleParts > 0 then
+                local handlePart = table.remove(handleParts, 1)  -- Get the first handle
+                -- Teleport the player to the Handle part
+                character.HumanoidRootPart.CFrame = handlePart.CFrame
+                print("Teleported to " .. handlePart.Parent.Name .. "'s Handle part!")
+
+                -- Wait for 0.3 seconds before checking for the next handle
+                wait(0.3)
+            else
+                -- If no handles are found, print and wait for 1 second before checking again
+                print("Waiting for Handle parts to appear...")
+                wait(1)
+            end
+        end
+    else
+        print("Player's character or HumanoidRootPart not found!")
+    end
+end
+
+-- Function to toggle teleportation on and off
+local function toggleTeleportation()
+    if teleporting then
+        teleporting = false
+        print("Teleportation OFF")
+    else
+        teleporting = true
+        print("Teleportation ON")
+        teleportToHandle()  -- Start teleporting when turned on
+    end
+end
+
+-- Create the GUI elements
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 200, 0, 50)
+button.Position = UDim2.new(0.5, -100, 0.8, -25)
+button.Text = "Toggle Teleportation"
+button.Parent = screenGui
+
+-- Make the button draggable
+local dragging = false
+local dragInput, dragStart, startPos
+
+-- Detect when the user clicks the button
+button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = button.Position
+    end
+end)
+
+-- Update the button's position as the mouse moves
+button.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Stop dragging when the user releases the mouse
+button.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- Toggle teleportation when the button is clicked
+button.MouseButton1Click:Connect(toggleTeleportation)
