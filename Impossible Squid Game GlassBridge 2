@@ -1,0 +1,83 @@
+-- LocalScript inside StarterPlayerScripts
+
+local player = game.Players.LocalPlayer
+local part = game.Workspace.Finish:WaitForChild("Part")  -- The part you want to teleport to
+local teleportEnabled = false  -- Start with teleportation off
+local teleportInterval = 3  -- Time between each teleport in seconds
+
+-- GUI setup
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+-- Create the toggle button
+local toggleButton = Instance.new("TextButton")
+toggleButton.Parent = screenGui
+toggleButton.Size = UDim2.new(0, 200, 0, 50)
+toggleButton.Position = UDim2.new(0.5, -100, 0.5, -25)
+toggleButton.Text = "Teleport On"
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+-- Draggable UI code for PC (mouse dragging)
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function onDragStart(input)
+    dragging = true
+    dragStart = input.Position
+    startPos = toggleButton.Position
+end
+
+local function onDrag(input)
+    if dragging then
+        local delta = input.Position - dragStart
+        toggleButton.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end
+
+local function onDragEnd()
+    dragging = false
+end
+
+-- Listen for drag start on mouse
+toggleButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        onDragStart(input)
+    end
+end)
+
+-- Listen for dragging on mouse
+toggleButton.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        onDrag(input)
+    end
+end)
+
+-- Listen for when dragging ends (mouse release)
+toggleButton.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        onDragEnd()
+    end
+end)
+
+-- Toggle the teleportation when the button is clicked
+toggleButton.MouseButton1Click:Connect(function()
+    teleportEnabled = not teleportEnabled  -- Toggle the teleportation status
+    if teleportEnabled then
+        toggleButton.Text = "Teleport Off"
+        toggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)  -- Change color when enabled
+    else
+        toggleButton.Text = "Teleport On"
+        toggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)  -- Change color when disabled
+    end
+end)
+
+-- Main loop to teleport every 3 seconds
+while true do
+    wait(teleportInterval)  -- Wait for 3 seconds before each teleport
+    
+    if teleportEnabled and part and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+        -- Teleport the player to the part
+        player.Character.HumanoidRootPart.CFrame = part.CFrame
+    end
+end
