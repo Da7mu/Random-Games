@@ -1,0 +1,87 @@
+-- Create ScreenGui for the button
+local player = game.Players.LocalPlayer
+local playerGui = player.PlayerGui
+
+-- Create a ScreenGui if it doesn't exist
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "TeleportGui"
+screenGui.Parent = playerGui
+
+-- Create the button
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 100, 0, 50)
+button.Position = UDim2.new(0, 50, 0, 50)
+button.Text = "Teleport: OFF"
+button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+button.Parent = screenGui
+
+-- Variables to control teleportation
+local teleportActive = false
+local teleportInterval = 0.2 -- delay between teleportations
+
+-- Function to teleport player to all chests
+local function teleportToChests()
+    local chestFolder = workspace.World.Chests
+    local validChests = {}
+
+    -- Loop through chests to find matching names
+    for _, chest in pairs(chestFolder:GetChildren()) do
+        if chest.Name == "Chest1" or chest.Name == "Chest2" or chest.Name == "Chest3" then
+            table.insert(validChests, chest)
+        end
+    end
+
+    -- Teleport player to all valid chests with a delay
+    for _, chest in pairs(validChests) do
+        player.Character:SetPrimaryPartCFrame(chest.CFrame)
+        wait(teleportInterval)
+    end
+end
+
+-- Function to toggle teleportation
+local function toggleTeleportation()
+    teleportActive = not teleportActive
+
+    -- Update the button text and color based on state
+    if teleportActive then
+        button.Text = "Teleport: ON"
+        button.BackgroundColor3 = Color3.fromRGB(0, 255, 0)  -- Green button for ON
+        -- Start teleporting every 1 second if teleportation is active
+        while teleportActive do
+            teleportToChests()
+            wait(1)  -- Wait a second before running the teleport again
+        end
+    else
+        button.Text = "Teleport: OFF"
+        button.BackgroundColor3 = Color3.fromRGB(255, 0, 0)  -- Red button for OFF
+    end
+end
+
+-- Button click event to toggle teleportation
+button.MouseButton1Click:Connect(toggleTeleportation)
+
+-- Draggable functionality for the button
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+button.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = button.Position
+    end
+end)
+
+button.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+button.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
