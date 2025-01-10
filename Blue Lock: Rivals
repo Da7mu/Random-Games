@@ -1,0 +1,155 @@
+-- Initialize GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "MenuGui"
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Create Menu Frame (Dark Transparent with Round Edges)
+local menuFrame = Instance.new("Frame")
+menuFrame.Size = UDim2.new(0, 400, 0, 300)  -- Increased Width, Height
+menuFrame.Position = UDim2.new(0.5, -200, 0.5, -150)  -- Centered on screen
+menuFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Dark background
+menuFrame.BackgroundTransparency = 0.3  -- More visible background (less transparent)
+menuFrame.BorderSizePixel = 0  -- No border
+menuFrame.Parent = screenGui
+menuFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+
+-- Round the edges
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 20)  -- Rounded corners
+corner.Parent = menuFrame
+
+-- Draggable Functionality
+local dragging, dragInput, dragStart, startPos
+local function update(input)
+    if dragging then
+        local delta = input.Position - dragStart
+        menuFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end
+
+menuFrame.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = menuFrame.Position
+        input.Changed:Connect(function()
+            if dragging then
+                update(input)
+            end
+        end)
+    end
+end)
+
+menuFrame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- Button to Start/Stop Teleporting to Goal
+local teleportButton = Instance.new("TextButton")
+teleportButton.Size = UDim2.new(0, 250, 0, 70)  -- Slightly larger button
+teleportButton.Position = UDim2.new(0.5, -125, 0.5, -100)  -- Adjusted position higher
+teleportButton.BackgroundColor3 = Color3.fromRGB(169, 169, 169)  -- Grey color
+teleportButton.Text = "Start Teleporting to Goal"
+teleportButton.Font = Enum.Font.SourceSans
+teleportButton.TextSize = 24  -- Increased font size
+teleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+teleportButton.Parent = menuFrame
+
+-- Round the edges of the button
+local buttonCorner = Instance.new("UICorner")
+buttonCorner.CornerRadius = UDim.new(0, 15)  -- Rounded button edges
+buttonCorner.Parent = teleportButton
+
+-- Track teleportation state
+local teleportState = false  -- Whether teleportation is active
+local teleportingCoroutine = nil  -- Coroutine to handle continuous teleportation
+
+-- Function to teleport the player to the Plane.001 part and keep them there
+local function teleportToGoalAndStay()
+    -- Ensure that we are correctly getting the Plane.001 part
+    local goalPlane = workspace:FindFirstChild("Goals")
+                     and workspace.Goals:FindFirstChild("Goal")
+                     and workspace.Goals.Goal:FindFirstChild("Plane.001")  -- Correct reference to the part named Plane.001
+    
+    if goalPlane then
+        local player = game.Players.LocalPlayer
+        while teleportState do
+            -- Teleport the player to Plane.001
+            player.Character:SetPrimaryPartCFrame(goalPlane.CFrame)
+            wait(0.1)  -- Reaffirm position every 0.1 seconds to ensure the player stays there
+        end
+    else
+        -- Print debug message if the part is not found
+        warn("Plane.001 part not found in workspace")
+    end
+end
+
+-- Button Click Event to Start/Stop Teleportation to Goal
+teleportButton.MouseButton1Click:Connect(function()
+    teleportState = not teleportState  -- Toggle the teleporting state
+    if teleportState then
+        -- Start teleporting to the goal
+        teleportButton.Text = "Stop Teleporting to Goal"
+        teleportButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)  -- Green background for active
+        teleportingCoroutine = coroutine.create(teleportToGoalAndStay)  -- Create coroutine for teleportation
+        coroutine.resume(teleportingCoroutine)  -- Start teleportation coroutine
+    else
+        -- Stop teleporting
+        teleportButton.Text = "Start Teleporting to Goal"
+        teleportButton.BackgroundColor3 = Color3.fromRGB(169, 169, 169)  -- Grey background for inactive
+        teleportState = false  -- Stop teleporting
+    end
+end)
+
+-- Create the "Teleport to Football" button
+local footballButton = Instance.new("TextButton")
+footballButton.Size = UDim2.new(0, 250, 0, 70)  -- Slightly larger button
+footballButton.Position = UDim2.new(0.5, -125, 0.5, 50)  -- Adjusted position to stay centered
+footballButton.BackgroundColor3 = Color3.fromRGB(169, 169, 169)  -- Grey color
+footballButton.Text = "Teleport to Football"
+footballButton.Font = Enum.Font.SourceSans
+footballButton.TextSize = 24  -- Increased font size
+footballButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+footballButton.Parent = menuFrame
+
+-- Round the edges of the button
+local footballButtonCorner = Instance.new("UICorner")
+footballButtonCorner.CornerRadius = UDim.new(0, 15)  -- Rounded button edges
+footballButtonCorner.Parent = footballButton
+
+-- Button Click Event to Teleport to Football
+footballButton.MouseButton1Click:Connect(function()
+    local football = workspace:FindFirstChild("Football")
+    
+    if football then
+        -- Instantly teleport to Football in Workspace.Football (No tweening)
+        local player = game.Players.LocalPlayer
+        player.Character:SetPrimaryPartCFrame(football.CFrame)
+    else
+        warn("Football not found in workspace")
+    end
+end)
+
+-- Create the "X" button to close the GUI
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 40, 0, 40)  -- Small button size for "X"
+closeButton.Position = UDim2.new(1, -45, 0, -45)  -- Positioned in the top-right corner with a margin
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)  -- White color
+closeButton.Text = "X"
+closeButton.Font = Enum.Font.SourceSans
+closeButton.TextSize = 30  -- Size of the "X"
+closeButton.TextColor3 = Color3.fromRGB(0, 0, 0)  -- Black color for visibility
+closeButton.Parent = menuFrame
+
+-- Round the edges of the close button
+local closeButtonCorner = Instance.new("UICorner")
+closeButtonCorner.CornerRadius = UDim.new(1, 0)  -- Fully round edges
+closeButtonCorner.Parent = closeButton
+
+-- Close the GUI when "X" is clicked
+closeButton.MouseButton1Click:Connect(function()
+    screenGui:Destroy()  -- Destroy the GUI
+end)
